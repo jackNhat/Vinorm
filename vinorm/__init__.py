@@ -1,38 +1,51 @@
+import subprocess
+import os
+import importlib.util
 
-import subprocess,os
-import imp
-def TTSnorm(text, punc = False, unknown = True, lower = True, rule = False ):
-    A=imp.find_module('vinorm')[1]
+def TTSnorm(text, punc=False, unknown=True, lower=True, rule=False):
+    # Use importlib.util.find_spec to find the location of vinorm
+    spec = importlib.util.find_spec("vinorm")
+    if spec is None or not spec.origin:
+        raise ModuleNotFoundError("vinorm module not found")
 
-    #print(A)
-    I=A+"/input.txt"
-    with open(I, mode="w+", encoding="utf-8") as fw:
+    # Get the directory containing the vinorm module
+    vinorm_dir = os.path.dirname(spec.origin)
+
+    # Write input text to file
+    input_file = os.path.join(vinorm_dir, "input.txt")
+    with open(input_file, "w+", encoding="utf-8") as fw:
         fw.write(text)
 
+    # Set environment variable
     myenv = os.environ.copy()
-    myenv['LD_LIBRARY_PATH'] = A+'/lib'
+    myenv['LD_LIBRARY_PATH'] = os.path.join(vinorm_dir, "lib")
 
-    E=A+"/main"
-    Command = [E]
+    # Prepare command
+    executable = os.path.join(vinorm_dir, "main")
+    command = [executable]
     if punc:
-        Command.append("-punc")
+        command.append("-punc")
     if unknown:
-        Command.append("-unknown")
+        command.append("-unknown")
     if lower:
-        Command.append("-lower")
+        command.append("-lower")
     if rule:
-        Command.append("-rule")
-    subprocess.check_call(Command, env=myenv, cwd=A)
-    
-    O=A+"/output.txt"
-    with open(O, mode="r", encoding="utf-8") as fr:
-        text=fr.read()
-    TEXT=""
-    S=text.split("#line#")
-    for s in S:
-        if s=="":
-            continue
-        TEXT+=s+". "
+        command.append("-rule")
 
+    # Execute the command
+    subprocess.check_call(command, env=myenv, cwd=vinorm_dir)
+
+    # Read output text from file
+    output_file = os.path.join(vinorm_dir, "output.txt")
+    with open(output_file, "r", encoding="utf-8") as fr:
+        output_text = fr.read()
+
+    # Process output
+    TEXT = ""
+    S = output_text.split("#line#")
+    for s in S:
+        if s == "":
+            continue
+        TEXT += s + ". "
 
     return TEXT
